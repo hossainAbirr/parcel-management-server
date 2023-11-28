@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const port = process.env.PORT || 2132;
@@ -29,14 +29,65 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("ParcelDB").collection("users");
+    const bookingCollection = client.db("ParcelDB").collection("bookings");
 
-    app.get('/users', async(req, res) => {
-        const result = await userCollection.find().toArray();
-        res.send(result)
-    })
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    // user post
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // get bookings by user
+    app.get("/bookings", async (req, res) => {
+      const user = req.query.email;
+      console.log(user);
+      const query = { bookingUserEmail: user };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/singleBooking/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.findOne(query);
+      res.send(result);
+    });
+
+    // update booking
+    app.patch("/updateBooking/:id", async (req, res) => {
+      const doc = req.body;
+      console.log(doc);
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          requestedDeliveryDate: doc.requestedDeliveryDate,
+          bookingUserPhone: doc.bookingUserPhone,
+          deliveryAddress: doc.deliveryAddress,
+          recieverPhone: doc.recieverPhone,
+          deliveryPrice: doc.deliveryPrice,
+          recieverName: doc.recieverName,
+          parcelType: doc.parcelType,
+          longitude: doc.longitude,
+          latitude: doc.latitude,
+          weight: doc.weight,
+        },
+      };
+      const result = await bookingCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
+    // booking post
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
 
