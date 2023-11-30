@@ -36,18 +36,24 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/user', async(req, res) => {
+    app.get("/user", async (req, res) => {
       const email = req.query.email;
-      const query = {email : email};
+      const query = { email: email };
       const result = await userCollection.findOne(query);
       res.send(result);
-    })
+    });
 
     // user post
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await userCollection.insertOne(user);
       res.send(result);
+    });
+    //  get allDeliveryMen
+    app.get("/allDeliveryMen", async (req, res) => {
+      const query = {role: 'provider'};
+      const result = await userCollection.find(query).toArray();
+      res.send(result)
     });
 
     // get bookings by user
@@ -56,6 +62,11 @@ async function run() {
       console.log(user);
       const query = { bookingUserEmail: user };
       const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/allBookings", async (req, res) => {
+      const result = await bookingCollection.find().toArray();
       res.send(result);
     });
 
@@ -103,6 +114,20 @@ async function run() {
       };
 
       const result = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    // update booking status
+    app.patch("/updateRole/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const role = req.body;
+      const updatedDoc = {
+        $set: {
+          role: role.role,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
 
