@@ -40,8 +40,47 @@ async function run() {
       const email = req.query.email;
       const query = { email: email };
       const result = await userCollection.findOne(query);
+      ``;
       res.send(result);
     });
+
+    // get user role
+    app.get("/users/role/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      let deliveryMen = false;
+      if (user?.role === "admin") {
+        admin = user?.role === "admin";
+      } else if (user?.role === "provider") {
+        deliveryMen = user?.role === "provider";
+      }
+      res.send({ admin, deliveryMen });
+    });
+
+    //  get allDeliveryMen
+    app.get("/allDeliveryMen", async (req, res) => {
+      const query = { role: "provider" };
+      const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // update delivery count 
+    app.patch('/countDelivery/:id', async(req, res) => {
+      const id = req.params.id;
+      console.log('Count Delivery ', id);
+      const countDelivery = req.body;
+      const query = {_id: new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          countDelivery: countDelivery.countDelivery
+        }
+      }
+      const result = await userCollection.updateOne(query, updatedDoc)
+      res.send(result)
+
+    })
 
     // user post
     app.post("/users", async (req, res) => {
@@ -49,13 +88,12 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-    //  get allDeliveryMen
-    app.get("/allDeliveryMen", async (req, res) => {
-      const query = {role: 'provider'};
-      const result = await userCollection.find(query).toArray();
-      res.send(result)
-    });
 
+    // get all bookings 
+    app.get('/allBookings', async(req, res) => {
+      const result = await bookingCollection.find().toArray();
+      res.send(result);
+    })
     // get bookings by user
     app.get("/bookings", async (req, res) => {
       const user = req.query.email;
@@ -63,6 +101,14 @@ async function run() {
       const query = { bookingUserEmail: user };
       const result = await bookingCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // get myDelivery list
+    app.get("/myDelivery/:id", async (req, res) => {
+      const id = req?.params?.id;
+      const query = {deliveryMenId : id}
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result)
     });
 
     app.get("/allBookings", async (req, res) => {
@@ -102,7 +148,7 @@ async function run() {
       res.send(result);
     });
 
-    // update booking status
+    // update booking status by user
     app.patch("/updateStatus/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -116,8 +162,24 @@ async function run() {
       const result = await bookingCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+    // update booking status by admin
+    app.patch("/updateDeliveryMen/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updated = req.body;
+      const updatedDoc = {
+        $set: {
+          status: updated.status,
+          approximateDeliveryDate: updated.approximateDeliveryDate,
+          deliveryMenId: updated.deliveryMenId,
+        },
+      };
 
-    // update booking status
+      const result = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    // update user role
     app.patch("/updateRole/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
